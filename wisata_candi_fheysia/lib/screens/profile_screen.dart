@@ -1,21 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-class ProfileScreen extends StatefulWidget {
+import '../providers/auth_provider.dart';
+import '../providers/favorite_provider.dart';
+import 'sign_in_screen.dart';
+
+class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
-}
-
-class _ProfileScreenState extends State<ProfileScreen> {
-  // TODO 1: Deklarasikan variabel
-  bool isSignedIn = false;
-  String fullName = '';
-  String userName = '';
-  int favoriteCandiCount = 0;
-
-  @override
   Widget build(BuildContext context) {
+    // Mengambil data dari Provider
+    final auth = context.watch<AuthProvider>();
+    final favoriteCount = context.watch<FavoriteProvider>().count;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -52,7 +50,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           ),
                         ),
-                        if (isSignedIn)
+
+                        if (auth.isSignedIn)
                           IconButton(
                             onPressed: () {},
                             icon: Icon(
@@ -75,7 +74,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ProfileInfoItem(
                         icon: Icons.lock,
                         label: 'Pengguna',
-                        value: userName,
+                        value: auth.username,
                         iconColor: Colors.amber,
                       ),
 
@@ -86,8 +85,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ProfileInfoItem(
                         icon: Icons.person,
                         label: 'Nama',
-                        value: fullName,
-                        showEditIcon: isSignedIn,
+                        value: auth.username,
+                        showEditIcon: auth.isSignedIn,
                         onEditPressed: () {
                           debugPrint('Icon edit ditekan');
                         },
@@ -101,8 +100,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ProfileInfoItem(
                         icon: Icons.favorite,
                         label: 'Favorit',
-                        value: favoriteCandiCount > 0
-                            ? '$favoriteCandiCount'
+                        value: favoriteCount > 0
+                            ? '$favoriteCount'
                             : '',
                         iconColor: Colors.red,
                       ),
@@ -115,13 +114,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Divider(color: Colors.deepPurple[100]),
                 const SizedBox(height: 20),
 
-                isSignedIn
+                auth.isSignedIn
                     ? TextButton(
-                  onPressed: signOut,
+                  onPressed: () {
+                    context.read<AuthProvider>().signOut();
+                  },
                   child: const Text('Sign Out'),
                 )
                     : TextButton(
-                  onPressed: signIn,
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const SignInScreen(),
+                      ),
+                    );
+                  },
                   child: const Text('Sign In'),
                 ),
               ],
@@ -130,20 +138,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
-  }
-
-  // TODO 5: Implementasi fungsi signIn
-  void signIn() {
-    setState(() {
-      isSignedIn = !isSignedIn;
-    });
-  }
-
-  // TODO 6: Implementasi fungsi signOut
-  void signOut() {
-    setState(() {
-      isSignedIn = !isSignedIn;
-    });
   }
 }
 
@@ -186,12 +180,15 @@ class ProfileInfoItem extends StatelessWidget {
             ],
           ),
         ),
+
         Expanded(
           child: Text(
             ': $value',
             style: const TextStyle(fontSize: 18),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
+
         if (showEditIcon)
           InkWell(
             onTap: onEditPressed,
